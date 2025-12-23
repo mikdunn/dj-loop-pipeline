@@ -1,0 +1,7 @@
+numpy
+pandas
+librosa
+soundfile
+xgboost
+pydub
+openl3
