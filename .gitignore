@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[codz]
+.venv/
+venv/
+.env
+
+# Audio / generated exports
+/data/raw_audio/
+/data/exported_loops/
+/data/**/*.mp3
+/data/**/*.wav
+
+# Training artifacts
+/training/models/
+/training/**/*.joblib
+/training/**/*.json
+
+# OS
+.DS_Store
+Thumbs.db

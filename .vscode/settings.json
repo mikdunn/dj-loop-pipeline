@@ -1,0 +1,17 @@
+{
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/.mypy_cache": true,
+    "**/.ruff_cache": true,
+    "**/.venv": true,
+    "data/raw_audio": true,
+    "data/exported_loops": true
+  },
+  "search.exclude": {
+    "**/__pycache__": true,
+    "**/.venv": true,
+    "data/raw_audio": true,
+    "data/exported_loops": true
+  }
+}
