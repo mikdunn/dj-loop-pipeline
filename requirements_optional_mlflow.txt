@@ -1,0 +1,3 @@
+# Optional: experiment tracking
+# Install with: pip install -r requirements_optional_mlflow.txt
+mlflow>=2.10

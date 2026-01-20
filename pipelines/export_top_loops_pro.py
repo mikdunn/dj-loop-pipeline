@@ -9,12 +9,45 @@ def normalize_audio(y, target=-14.0):
     gain = 10**((target - 20*np.log10(rms + 1e-8))/20)
     return y * gain
 
-def export_top_loops(df, audio_file, outdir, top_k=5, sr=44100, export_mp3=False):
-    from pydub import AudioSegment
+def export_top_loops(
+    df,
+    audio_file,
+    outdir,
+    top_k=5,
+    sr=44100,
+    export_mp3=False,
+    *,
+    min_score: float | None = None,
+    min_score_prob: float | None = None,
+    min_rel_score: float | None = None,
+):
     y, _ = librosa.load(audio_file, sr=sr, mono=True)
     outdir = Path(outdir)
     outdir.mkdir(exist_ok=True, parents=True)
     metas = []
+
+    # Ensure best->worst ordering if a score column exists.
+    if isinstance(df, pd.DataFrame) and "score" in df.columns:
+        df = df.sort_values("score", ascending=False)
+
+    # Apply optional cutoffs (works even if caller didn't filter).
+    if isinstance(df, pd.DataFrame) and len(df) > 0:
+        if min_score is not None and "score" in df.columns:
+            df = df[df["score"] >= float(min_score)]
+        if min_score_prob is not None and "score_prob" in df.columns:
+            df = df[df["score_prob"] >= float(min_score_prob)]
+        if min_rel_score is not None and "score" in df.columns and len(df) > 0:
+            best = float(df["score"].iloc[0])
+            df = df[df["score"] >= best + float(min_rel_score)]
+
+    if export_mp3:
+        try:
+            from pydub import AudioSegment  # type: ignore
+        except Exception as e:
+            raise ImportError(
+                "MP3 export requested but 'pydub' is not installed. Install pydub (and ffmpeg) or set export_mp3=False."
+            ) from e
+
     for i, row in df.head(top_k).iterrows():
         seg = y[int(row["start_time"]*sr):int(row["end_time"]*sr)]
         seg = normalize_audio(seg)
