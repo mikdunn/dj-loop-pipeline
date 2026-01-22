@@ -15,7 +15,8 @@ RUN apt-get update && apt-get install -y \
 
 # Install Python dependencies
 RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+# Install dependencies from project requirements file
+RUN pip install -r requirements_dj_loop_pipeline.txt
 
 # Set environment variables (optional)
 ENV PYTHONUNBUFFERED=1

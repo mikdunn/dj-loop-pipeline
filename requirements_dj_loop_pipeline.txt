@@ -5,3 +5,7 @@ soundfile
 xgboost
 pydub
 openl3
+requests
+mutagen
+rapidfuzz
+python-dotenv
