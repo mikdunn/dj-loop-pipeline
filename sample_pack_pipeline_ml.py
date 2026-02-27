@@ -15,7 +15,7 @@ class LoopPipelineML:
     def process_track(self, audio_path, timestamps=None):
         y, sr = librosa.load(audio_path, sr=44100, mono=True)
         bpm, beats = librosa.beat.beat_track(y=y, sr=sr, units="time")
-        cands = generate_bar_aligned_candidates(audio_path.stem, beats, bpm, [1,2,4])
+        cands = generate_bar_aligned_candidates(audio_path.stem, beats, bpm, [4,8])
         data = []
         for cand in cands:
             feats = extract_full_features(y,sr,cand.start_time,cand.end_time)
