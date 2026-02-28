@@ -57,6 +57,7 @@ def run_sweep(
     val_size: float,
     test_size: float,
     random_state: int,
+    label_source: str,
 ) -> None:
     experiments: List[Dict] = []
     exp_id = 0
@@ -79,6 +80,7 @@ def run_sweep(
                         n_estimators=int(n_estimators),
                         max_depth=max_depth,
                         min_samples_leaf=int(min_leaf),
+                        label_source=label_source,
                     )
 
                     _ = bundle  # bundle not persisted in sweep; report is the tracked artifact
@@ -155,6 +157,12 @@ def main() -> None:
 
     parser.add_argument("--leaderboard_json", default="training/models/loop_multilabel_leaderboard.json")
     parser.add_argument("--leaderboard_csv", default="training/models/loop_multilabel_leaderboard.csv")
+    parser.add_argument(
+        "--label_source",
+        choices=("filename", "audio", "hybrid"),
+        default="audio",
+        help="Weak-label source used when building the dataset.",
+    )
 
     args = parser.parse_args()
 
@@ -162,7 +170,12 @@ def main() -> None:
     if not root.exists():
         raise FileNotFoundError(f"Folder not found: {root}")
 
-    df = build_dataset(root, min_tag_count=int(args.min_tag_count), max_files=args.max_files)
+    df = build_dataset(
+        root,
+        min_tag_count=int(args.min_tag_count),
+        max_files=args.max_files,
+        label_source=args.label_source,
+    )
     if df.empty:
         raise RuntimeError("No labeled loop rows found for sweep")
 
@@ -208,6 +221,7 @@ def main() -> None:
         val_size=val_size,
         test_size=test_size,
         random_state=int(args.random_state),
+        label_source=args.label_source,
     )
 
 

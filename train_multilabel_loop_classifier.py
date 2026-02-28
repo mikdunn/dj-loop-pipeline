@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import re
+import warnings
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -36,6 +37,8 @@ TAG_PATTERNS = {
     "electronic": r"electronic|electronica",
 }
 
+LABEL_SOURCE_CHOICES = ("filename", "audio", "hybrid")
+
 
 def collect_audio_files(root: Path) -> List[Path]:
     out: List[Path] = []
@@ -56,6 +59,108 @@ def infer_tags(path: Path) -> List[str]:
     # common normalization
     if "dnb" in tags and "breaks" not in tags:
         tags.append("breaks")
+    return sorted(set(tags))
+
+
+def infer_universal_audio_tags(file_path: Path, sr: int = 22050, max_seconds: float = 20.0) -> List[str]:
+    """Infer universal, acoustically-grounded tags from audio only.
+
+    These labels are intentionally genre-agnostic and focus on rhythmic/percussive
+    structure that generalizes across sources.
+    """
+    try:
+        y, fs = librosa.load(str(file_path), sr=sr, mono=True)
+    except Exception:
+        return []
+
+    if y is None or len(y) < 4096:
+        return []
+
+    y = y[: int(max_seconds * fs)]
+
+    onset_env = librosa.onset.onset_strength(y=y, sr=fs)
+    if onset_env.size == 0:
+        return []
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        tempo_arr = librosa.feature.tempo(onset_envelope=onset_env, sr=fs, aggregate=np.median)
+    tempo = float(tempo_arr[0]) if tempo_arr.size else 120.0
+    if not np.isfinite(tempo):
+        tempo = 120.0
+
+    beat_frames = librosa.beat.beat_track(onset_envelope=onset_env, sr=fs, units="frames")[1]
+    beat_times = librosa.frames_to_time(beat_frames, sr=fs) if beat_frames is not None else np.array([])
+
+    # Beat stability from inter-beat interval variability.
+    beat_cv = 1.0
+    if beat_times.size >= 3:
+        ibi = np.diff(beat_times)
+        ibi_mean = float(np.mean(ibi))
+        if ibi_mean > 1e-6:
+            beat_cv = float(np.std(ibi) / ibi_mean)
+
+    # Syncopation proxy: off-beat onset energy relative to on-beat energy.
+    frame_times = librosa.frames_to_time(np.arange(onset_env.size), sr=fs)
+    sync_ratio = 1.0
+    if beat_times.size >= 3:
+        on_energy = float(np.mean(np.interp(beat_times, frame_times, onset_env, left=0.0, right=0.0)))
+        off_times = 0.5 * (beat_times[:-1] + beat_times[1:])
+        off_energy = float(np.mean(np.interp(off_times, frame_times, onset_env, left=0.0, right=0.0)))
+        sync_ratio = (off_energy + 1e-6) / (on_energy + 1e-6)
+
+    # Percussive ratio from HPSS.
+    try:
+        y_h, y_p = librosa.effects.hpss(y)
+        e_h = float(np.mean(y_h ** 2))
+        e_p = float(np.mean(y_p ** 2))
+        perc_ratio = e_p / (e_h + e_p + 1e-8)
+    except Exception:
+        perc_ratio = 0.0
+
+    # Onset density (events/sec) and phrase periodicity proxy.
+    onset_frames = librosa.onset.onset_detect(onset_envelope=onset_env, sr=fs, backtrack=False)
+    duration_sec = max(1e-6, float(len(y) / fs))
+    onset_rate = float(len(onset_frames) / duration_sec)
+
+    ac = np.correlate(onset_env, onset_env, mode="full")
+    ac = ac[ac.size // 2:]
+    if ac.size > 1:
+        ac = ac / (ac[0] + 1e-8)
+        phrase_strength = float(np.max(ac[1:min(ac.size, 300)]))
+    else:
+        phrase_strength = 0.0
+
+    tags: List[str] = []
+
+    # Tempo bins
+    if tempo < 95.0:
+        tags.append("tempo_slow")
+    elif tempo < 130.0:
+        tags.append("tempo_mid")
+    else:
+        tags.append("tempo_fast")
+
+    # Beat stability bins
+    tags.append("beat_stable" if beat_cv < 0.18 else "beat_loose")
+
+    # Syncopation bins
+    tags.append("sync_low" if sync_ratio < 1.05 else "sync_high")
+
+    # Percussive/harmonic emphasis
+    tags.append("percussive_high" if perc_ratio >= 0.55 else "percussive_low")
+
+    # Event density
+    if onset_rate < 2.0:
+        tags.append("density_sparse")
+    elif onset_rate < 4.0:
+        tags.append("density_mid")
+    else:
+        tags.append("density_dense")
+
+    # Phrase periodicity strength
+    tags.append("phrase_regular" if phrase_strength >= 0.30 else "phrase_free")
+
     return sorted(set(tags))
 
 
@@ -124,7 +229,23 @@ def extract_loop_features(file_path: Path, sr: int = 22050, max_seconds: float =
     return feats
 
 
-def build_dataset(root: Path, min_tag_count: int = 8, max_files: Optional[int] = None) -> pd.DataFrame:
+def resolve_tags(path: Path, label_source: str) -> List[str]:
+    label_source = label_source.lower().strip()
+    if label_source == "filename":
+        return infer_tags(path)
+    if label_source == "audio":
+        return infer_universal_audio_tags(path)
+    if label_source == "hybrid":
+        return sorted(set(infer_tags(path) + infer_universal_audio_tags(path)))
+    raise ValueError(f"Unsupported label_source='{label_source}'. Expected one of {LABEL_SOURCE_CHOICES}")
+
+
+def build_dataset(
+    root: Path,
+    min_tag_count: int = 8,
+    max_files: Optional[int] = None,
+    label_source: str = "filename",
+) -> pd.DataFrame:
     files = collect_audio_files(root)
     if max_files is not None and max_files > 0:
         files = files[:max_files]
@@ -133,7 +254,7 @@ def build_dataset(root: Path, min_tag_count: int = 8, max_files: Optional[int] =
     tag_counter: Dict[str, int] = {}
 
     for i, p in enumerate(files, start=1):
-        tags = infer_tags(p)
+        tags = resolve_tags(p, label_source=label_source)
         if not tags:
             continue
 
@@ -369,6 +490,7 @@ def fit_and_evaluate_multilabel(
     n_estimators: int,
     max_depth: Optional[int],
     min_samples_leaf: int,
+    label_source: str,
 ) -> Tuple[Dict, Dict]:
     feature_cols = [c for c in df.columns if c not in {"file", "tags"}]
     x = df[feature_cols]
@@ -437,6 +559,7 @@ def fit_and_evaluate_multilabel(
         "n_test": int(len(x_test)),
         "n_classes": int(len(classes)),
         "classes": classes,
+        "label_source": label_source,
         "random_state": int(random_state),
         "split_strategy": "iterative_multilabel_stratified",
         "val_metrics": {
@@ -471,6 +594,7 @@ def fit_and_evaluate_multilabel(
         "model": clf,
         "feature_cols": feature_cols,
         "classes": classes,
+        "label_source": label_source,
         "thresholds": thresholds,
         "calibration_policy": report_payload["calibration_policy"],
         "split_strategy": "iterative_multilabel_stratified",
@@ -495,6 +619,7 @@ def train_multilabel(
     n_estimators: int,
     max_depth: Optional[int],
     min_samples_leaf: int,
+    label_source: str,
 ) -> None:
     bundle, report_payload = fit_and_evaluate_multilabel(
         df,
@@ -509,6 +634,7 @@ def train_multilabel(
         n_estimators=n_estimators,
         max_depth=max_depth,
         min_samples_leaf=min_samples_leaf,
+        label_source=label_source,
     )
 
     model_out.parent.mkdir(parents=True, exist_ok=True)
@@ -548,13 +674,24 @@ def main():
     parser.add_argument("--n_estimators", type=int, default=600, help="RandomForest n_estimators")
     parser.add_argument("--max_depth", type=int, default=0, help="RandomForest max_depth (0 means None)")
     parser.add_argument("--min_samples_leaf", type=int, default=2, help="RandomForest min_samples_leaf")
+    parser.add_argument(
+        "--label_source",
+        choices=LABEL_SOURCE_CHOICES,
+        default="audio",
+        help="Source of weak labels: filename regex tags, universal audio tags, or both.",
+    )
     args = parser.parse_args()
 
     root = Path(args.folder)
     if not root.exists():
         raise FileNotFoundError(f"Folder not found: {root}")
 
-    df = build_dataset(root, min_tag_count=args.min_tag_count, max_files=args.max_files)
+    df = build_dataset(
+        root,
+        min_tag_count=args.min_tag_count,
+        max_files=args.max_files,
+        label_source=args.label_source,
+    )
     if df.empty:
         raise RuntimeError("No labeled loop rows found for training")
 
@@ -564,6 +701,7 @@ def main():
     df_to_save["tags"] = df_to_save["tags"].apply(lambda x: ",".join(x))
     df_to_save.to_csv(ds_out, index=False)
     print(f"Saved dataset: {ds_out} (rows={len(df_to_save)})")
+    print(f"Label source: {args.label_source}")
 
     cal_min = max(0.0, min(1.0, float(args.calibration_min_threshold)))
     cal_max = max(0.0, min(1.0, float(args.calibration_max_threshold)))
@@ -597,6 +735,7 @@ def main():
         n_estimators=n_estimators,
         max_depth=max_depth,
         min_samples_leaf=min_samples_leaf,
+        label_source=args.label_source,
     )
 
 

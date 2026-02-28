@@ -15,12 +15,28 @@ def classify_folder(
     out_csv: Path,
     min_prob: float = 0.35,
     use_calibrated_thresholds: bool = True,
+    contact_model_path: Path = None,
+    contact_min_prob: float = 0.35,
+    contact_use_calibrated_thresholds: bool = True,
+    contact_prefix: str = "contact",
 ) -> None:
     bundle = joblib.load(model_path)
     model = bundle["model"]
     feature_cols: List[str] = bundle["feature_cols"]
     classes: List[str] = bundle["classes"]
     thresholds: Dict[str, float] = bundle.get("thresholds", {})
+
+    contact_bundle = None
+    contact_model = None
+    contact_feature_cols: List[str] = []
+    contact_classes: List[str] = []
+    contact_thresholds: Dict[str, float] = {}
+    if contact_model_path is not None:
+        contact_bundle = joblib.load(contact_model_path)
+        contact_model = contact_bundle["model"]
+        contact_feature_cols = contact_bundle["feature_cols"]
+        contact_classes = contact_bundle["classes"]
+        contact_thresholds = contact_bundle.get("thresholds", {})
 
     files = collect_audio_files(folder)
     rows: List[Dict] = []
@@ -55,6 +71,29 @@ def classify_folder(
         }
         for cls, pr in zip(classes, probs):
             row[f"prob_{cls}"] = float(pr)
+
+        if contact_bundle is not None and contact_model is not None:
+            x_contact = pd.DataFrame([feats])
+            for col in contact_feature_cols:
+                if col not in x_contact.columns:
+                    x_contact[col] = 0.0
+            x_contact = x_contact[contact_feature_cols]
+
+            c_probs = np.asarray(contact_model.predict_proba(x_contact)).reshape(-1)
+
+            def _contact_threshold_for(cls: str) -> float:
+                if contact_use_calibrated_thresholds and cls in contact_thresholds:
+                    return float(contact_thresholds[cls])
+                return float(contact_min_prob)
+
+            c_tags = [contact_classes[j] for j, pr in enumerate(c_probs) if pr >= _contact_threshold_for(contact_classes[j])]
+            if not c_tags:
+                c_tags = [contact_classes[int(np.argmax(c_probs))]]
+
+            row[f"predicted_{contact_prefix}_tags"] = ",".join(c_tags)
+            for cls, pr in zip(contact_classes, c_probs):
+                row[f"prob_{contact_prefix}_{cls}"] = float(pr)
+
         rows.append(row)
 
         if i % 200 == 0:
@@ -79,6 +118,14 @@ def main():
         action="store_true",
         help="Ignore calibrated per-label thresholds in the model bundle and use --min_prob globally.",
     )
+    parser.add_argument("--contact_model", default=None, help="Optional contact-map model bundle (.joblib)")
+    parser.add_argument("--contact_min_prob", type=float, default=0.35, help="Fallback probability threshold for contact head")
+    parser.add_argument(
+        "--contact_disable_calibrated_thresholds",
+        action="store_true",
+        help="Ignore calibrated per-label thresholds for contact head and use --contact_min_prob globally.",
+    )
+    parser.add_argument("--contact_prefix", default="contact", help="Column prefix for contact head outputs")
     args = parser.parse_args()
 
     classify_folder(
@@ -87,6 +134,10 @@ def main():
         out_csv=Path(args.out),
         min_prob=max(0.0, min(1.0, args.min_prob)),
         use_calibrated_thresholds=not args.disable_calibrated_thresholds,
+        contact_model_path=Path(args.contact_model) if args.contact_model else None,
+        contact_min_prob=max(0.0, min(1.0, args.contact_min_prob)),
+        contact_use_calibrated_thresholds=not args.contact_disable_calibrated_thresholds,
+        contact_prefix=str(args.contact_prefix).strip() or "contact",
     )
 
 
