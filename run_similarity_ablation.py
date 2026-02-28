@@ -29,6 +29,8 @@ def main() -> None:
         help="Comma-separated leakage modes",
     )
     ap.add_argument("--test_size", type=float, default=0.25)
+    ap.add_argument("--use_ar_features", action="store_true", help="Enable AR features in loop feature extraction")
+    ap.add_argument("--ar_order", type=int, default=6, help="AR order used when --use_ar_features is enabled")
     ap.add_argument("--modes", default="none,self_tuned_knn,sinkhorn")
     args = ap.parse_args()
 
@@ -53,6 +55,8 @@ def main() -> None:
                     n_bins=max(2, int(args.n_bins)),
                     random_state=int(args.random_state),
                     test_size=min(0.45, max(0.1, float(args.test_size))),
+                    use_ar_features=bool(args.use_ar_features),
+                    ar_order=max(1, int(args.ar_order)),
                 )
                 payload = json.loads(report_path.read_text(encoding="utf-8"))
                 rows.append(payload)
@@ -67,6 +71,8 @@ def main() -> None:
                 "modes": modes,
                 "models": models,
                 "leakage_modes": leakage_modes,
+                "use_ar_features": bool(args.use_ar_features),
+                "ar_order": max(1, int(args.ar_order)),
                 "best": rows[0] if rows else None,
                 "rows": rows,
             },

@@ -1,0 +1,21 @@
+{
+  "mode": "self_tuned_knn",
+  "model_family": "svm_rbf_calibrated",
+  "leakage_mode": "strict_train_only",
+  "n_rows": 95,
+  "n_classes": 4,
+  "n_train": 71,
+  "n_test": 24,
+  "accuracy": 0.25,
+  "macro_f1": 0.21901709401709402,
+  "weighted_f1": 0.1988960113960114,
+  "random_state": 42,
+  "max_files": 120,
+  "n_bins": 4,
+  "test_size": 0.25,
+  "use_ar_features": true,
+  "ar_order": 6,
+  "block_contrast": 0.17593163559059116,
+  "spectral_gap": 0.15292092577418265,
+  "mean_similarity": 0.055256923752493074
+}

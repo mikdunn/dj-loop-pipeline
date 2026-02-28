@@ -16,7 +16,6 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
-from sklearn.model_selection import train_test_split
 
 ROOT = Path(__file__).resolve().parent
 if str(ROOT) not in sys.path:
@@ -162,15 +161,22 @@ def _assign_test_labels_from_train(train_seq: List[np.ndarray], train_labels: np
     return np.asarray(out, dtype=int)
 
 
-def _build_artifact_paths(out_dir: Path, mode: str, model_family: ModelFamily, leakage_mode: LeakageMode) -> Tuple[Path, Path, Path]:
+def _build_artifact_paths(
+    out_dir: Path,
+    mode: str,
+    model_family: ModelFamily,
+    leakage_mode: LeakageMode,
+    use_ar_features: bool,
+) -> Tuple[Path, Path, Path]:
     # Backward-compatible default names for existing downstream scripts.
-    if model_family == "rf" and leakage_mode == "transductive":
+    if model_family == "rf" and leakage_mode == "transductive" and not use_ar_features:
         dataset_csv = out_dir / f"contact_train_dataset_{mode}.csv"
         model_path = out_dir / f"contact_rf_model_{mode}.joblib"
         report_path = out_dir / f"contact_train_report_{mode}.json"
         return dataset_csv, model_path, report_path
 
-    suffix = f"{mode}_{model_family}_{leakage_mode}"
+    ar_tag = "ar6" if use_ar_features else "base"
+    suffix = f"{mode}_{model_family}_{leakage_mode}_{ar_tag}"
     dataset_csv = out_dir / f"contact_train_dataset_{suffix}.csv"
     model_path = out_dir / f"contact_model_{suffix}.joblib"
     report_path = out_dir / f"contact_train_report_{suffix}.json"
@@ -187,6 +193,8 @@ def run_train(
     model_family: ModelFamily = "rf",
     leakage_mode: LeakageMode = "transductive",
     test_size: float = 0.25,
+    use_ar_features: bool = False,
+    ar_order: int = 6,
 ) -> Path:
     files = collect_audio_files(folder)
     if max_files > 0:
@@ -199,7 +207,7 @@ def run_train(
     keep_files: List[Path] = []
     for p in files:
         seq = extract_pattern_sequence(p)
-        feat = extract_loop_features(p)
+        feat = extract_loop_features(p, use_ar_features=bool(use_ar_features), ar_order=int(ar_order))
         if seq is not None and feat is not None:
             feats_seq.append(seq)
             row_feats.append(feat)
@@ -279,6 +287,8 @@ def run_train(
         "max_files": int(max_files),
         "n_bins": int(n_bins),
         "test_size": float(test_size),
+        "use_ar_features": bool(use_ar_features),
+        "ar_order": int(ar_order),
         **graph_metrics,
     }
 
@@ -288,6 +298,7 @@ def run_train(
         mode=mode,
         model_family=model_family,
         leakage_mode=leakage_mode,
+        use_ar_features=bool(use_ar_features),
     )
 
     df.to_csv(dataset_csv, index=False)
@@ -300,6 +311,8 @@ def run_train(
             "model_family": model_family,
             "leakage_mode": leakage_mode,
             "test_size": float(test_size),
+            "use_ar_features": bool(use_ar_features),
+            "ar_order": int(ar_order),
             "split_indices": {
                 "train": [int(i) for i in idx_train.tolist()],
                 "test": [int(i) for i in idx_test.tolist()],
@@ -313,7 +326,7 @@ def run_train(
     print(f"Saved model: {model_path}")
     print(f"Saved report: {report_path}")
     print(
-        f"mode={mode}, model={model_family}, leakage={leakage_mode} | "
+        f"mode={mode}, model={model_family}, leakage={leakage_mode}, ar={bool(use_ar_features)} | "
         f"macro_f1={report['macro_f1']:.4f}, weighted_f1={report['weighted_f1']:.4f}, accuracy={report['accuracy']:.4f}"
     )
 
@@ -335,6 +348,8 @@ def main() -> None:
     ap.add_argument("--n_bins", type=int, default=4)
     ap.add_argument("--random_state", type=int, default=42)
     ap.add_argument("--test_size", type=float, default=0.25)
+    ap.add_argument("--use_ar_features", action="store_true", help="Add AR features (AR(6) by default) on onset_z and low_env")
+    ap.add_argument("--ar_order", type=int, default=6, help="AR order when --use_ar_features is enabled")
     args = ap.parse_args()
 
     run_train(
@@ -347,6 +362,8 @@ def main() -> None:
         n_bins=max(2, int(args.n_bins)),
         random_state=int(args.random_state),
         test_size=min(0.45, max(0.1, float(args.test_size))),
+        use_ar_features=bool(args.use_ar_features),
+        ar_order=max(1, int(args.ar_order)),
     )
 
 

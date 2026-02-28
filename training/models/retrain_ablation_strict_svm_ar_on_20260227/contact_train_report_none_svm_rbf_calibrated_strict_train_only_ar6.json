@@ -1,0 +1,21 @@
+{
+  "mode": "none",
+  "model_family": "svm_rbf_calibrated",
+  "leakage_mode": "strict_train_only",
+  "n_rows": 95,
+  "n_classes": 4,
+  "n_train": 71,
+  "n_test": 24,
+  "accuracy": 0.5833333333333334,
+  "macro_f1": 0.5970695970695971,
+  "weighted_f1": 0.612942612942613,
+  "random_state": 42,
+  "max_files": 120,
+  "n_bins": 4,
+  "test_size": 0.25,
+  "use_ar_features": true,
+  "ar_order": 6,
+  "block_contrast": 0.3289914275617343,
+  "spectral_gap": 0.48602192037431713,
+  "mean_similarity": 0.32312638631885665
+}

@@ -1,0 +1,101 @@
+{
+  "modes": [
+    "none",
+    "self_tuned_knn",
+    "sinkhorn"
+  ],
+  "models": [
+    "svm_rbf_calibrated"
+  ],
+  "leakage_modes": [
+    "strict_train_only"
+  ],
+  "use_ar_features": false,
+  "ar_order": 6,
+  "best": {
+    "mode": "none",
+    "model_family": "svm_rbf_calibrated",
+    "leakage_mode": "strict_train_only",
+    "n_rows": 95,
+    "n_classes": 4,
+    "n_train": 71,
+    "n_test": 24,
+    "accuracy": 0.5833333333333334,
+    "macro_f1": 0.5785714285714285,
+    "weighted_f1": 0.5952380952380952,
+    "random_state": 42,
+    "max_files": 120,
+    "n_bins": 4,
+    "test_size": 0.25,
+    "use_ar_features": false,
+    "ar_order": 6,
+    "block_contrast": 0.3289914275617343,
+    "spectral_gap": 0.48602192037431713,
+    "mean_similarity": 0.32312638631885665
+  },
+  "rows": [
+    {
+      "mode": "none",
+      "model_family": "svm_rbf_calibrated",
+      "leakage_mode": "strict_train_only",
+      "n_rows": 95,
+      "n_classes": 4,
+      "n_train": 71,
+      "n_test": 24,
+      "accuracy": 0.5833333333333334,
+      "macro_f1": 0.5785714285714285,
+      "weighted_f1": 0.5952380952380952,
+      "random_state": 42,
+      "max_files": 120,
+      "n_bins": 4,
+      "test_size": 0.25,
+      "use_ar_features": false,
+      "ar_order": 6,
+      "block_contrast": 0.3289914275617343,
+      "spectral_gap": 0.48602192037431713,
+      "mean_similarity": 0.32312638631885665
+    },
+    {
+      "mode": "sinkhorn",
+      "model_family": "svm_rbf_calibrated",
+      "leakage_mode": "strict_train_only",
+      "n_rows": 95,
+      "n_classes": 4,
+      "n_train": 71,
+      "n_test": 24,
+      "accuracy": 0.5,
+      "macro_f1": 0.4916056166056166,
+      "weighted_f1": 0.5042480667480668,
+      "random_state": 42,
+      "max_files": 120,
+      "n_bins": 4,
+      "test_size": 0.25,
+      "use_ar_features": false,
+      "ar_order": 6,
+      "block_contrast": 0.15980783087766867,
+      "spectral_gap": 0.31400278321225095,
+      "mean_similarity": 0.04434746848912506
+    },
+    {
+      "mode": "self_tuned_knn",
+      "model_family": "svm_rbf_calibrated",
+      "leakage_mode": "strict_train_only",
+      "n_rows": 95,
+      "n_classes": 4,
+      "n_train": 71,
+      "n_test": 24,
+      "accuracy": 0.25,
+      "macro_f1": 0.22460317460317458,
+      "weighted_f1": 0.20171957671957672,
+      "random_state": 42,
+      "max_files": 120,
+      "n_bins": 4,
+      "test_size": 0.25,
+      "use_ar_features": false,
+      "ar_order": 6,
+      "block_contrast": 0.17593163559059116,
+      "spectral_gap": 0.15292092577418265,
+      "mean_similarity": 0.055256923752493074
+    }
+  ]
+}

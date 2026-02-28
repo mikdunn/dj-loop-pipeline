@@ -1,0 +1,19 @@
+{
+  "mode": "sinkhorn",
+  "model_family": "stacking_rf_svm",
+  "leakage_mode": "strict_train_only",
+  "n_rows": 95,
+  "n_classes": 4,
+  "n_train": 71,
+  "n_test": 24,
+  "accuracy": 0.5,
+  "macro_f1": 0.4861111111111111,
+  "weighted_f1": 0.4976851851851851,
+  "random_state": 42,
+  "max_files": 120,
+  "n_bins": 4,
+  "test_size": 0.25,
+  "block_contrast": 0.15980783087766867,
+  "spectral_gap": 0.31400278321225095,
+  "mean_similarity": 0.04434746848912506
+}

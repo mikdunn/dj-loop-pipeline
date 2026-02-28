@@ -1,0 +1,38 @@
+{
+  "baseline_report": "training\\models\\retrain_ablation_full_20260227\\contact_train_report_sinkhorn_svm_rbf_calibrated_transductive.json",
+  "new_report": "training\\models\\retrain_drumbreaks_best_20260227\\contact_train_report_sinkhorn_svm_rbf_calibrated_transductive.json",
+  "baseline": {
+    "mode": "sinkhorn",
+    "model_family": "svm_rbf_calibrated",
+    "leakage_mode": "transductive",
+    "n_rows": 95,
+    "n_classes": 4,
+    "accuracy": 0.7083333333333334,
+    "macro_f1": 0.6981518481518482,
+    "weighted_f1": 0.6900349650349651,
+    "block_contrast": 0.11543867191912738,
+    "spectral_gap": 0.40707932965059035,
+    "mean_similarity": 0.04966958772099875
+  },
+  "new": {
+    "mode": "sinkhorn",
+    "model_family": "svm_rbf_calibrated",
+    "leakage_mode": "transductive",
+    "n_rows": 95,
+    "n_classes": 4,
+    "accuracy": 0.625,
+    "macro_f1": 0.6484848484848484,
+    "weighted_f1": 0.6484848484848486,
+    "block_contrast": 0.11744803243362191,
+    "spectral_gap": 0.3894220862380765,
+    "mean_similarity": 0.052588910517962315
+  },
+  "delta_new_minus_baseline": {
+    "accuracy": -0.08333333333333337,
+    "macro_f1": -0.04966699966699972,
+    "weighted_f1": -0.041550116550116534,
+    "block_contrast": 0.002009360514494532,
+    "spectral_gap": -0.017657243412513846,
+    "mean_similarity": 0.0029193227969635666
+  }
+}
