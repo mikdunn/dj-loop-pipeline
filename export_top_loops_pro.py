@@ -1,5 +1,4 @@
 import numpy as np
-import librosa
 import soundfile as sf
 from pathlib import Path
 import pandas as pd
@@ -12,22 +11,27 @@ def normalize_audio(y, target=-14.0):
 
 def export_top_loops(df, audio_file, outdir, top_k=5, sr=44100, export_mp3=False, add_tags: bool = True):
     from pydub import AudioSegment
-    y, _ = librosa.load(audio_file, sr=sr, mono=True)
+    # Load audio using soundfile to avoid heavy dependencies
+    y, actual_sr = sf.read(audio_file)
+    # Ensure mono
+    if y.ndim > 1:
+        y = y.mean(axis=1)
     outdir = Path(outdir)
     outdir.mkdir(exist_ok=True, parents=True)
     # Optional tagging of source track (same tags applied to all exported loops)
     tags = identify_track(str(audio_file)) if add_tags else None
     metas = []
     for i, row in df.head(top_k).iterrows():
-        seg = y[int(row["start_time"]*sr):int(row["end_time"]*sr)]
+        # Use actual sample rate from file for accurate slicing
+        seg = y[int(row["start_time"]*actual_sr):int(row["end_time"]*actual_sr)]
         seg = normalize_audio(seg)
         wav_path = outdir / f"{row['track_id']}_loop{i}.wav"
-        sf.write(wav_path, seg, sr)
+        sf.write(wav_path, seg, actual_sr)
         if export_mp3:
             seg16 = (seg * 32767).astype(np.int16)
             audio_seg = AudioSegment(
                 seg16.tobytes(),
-                frame_rate=sr,
+                frame_rate=actual_sr,
                 sample_width=2,
                 channels=1
             )
