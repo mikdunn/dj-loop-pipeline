@@ -1,0 +1,42 @@
+{
+  "previous_matrix_metrics_file": "training\\models\\contact_map_compare\\sharpen_mode_metrics.csv",
+  "baseline_report": "training\\models\\retrain_compare\\contact_train_report_none.json",
+  "new_report": "training\\models\\retrain_compare\\contact_train_report_self_tuned_knn.json",
+  "deltas_new_minus_baseline": {
+    "accuracy": -0.13333333333333333,
+    "macro_f1": -0.09890174969509333,
+    "weighted_f1": -0.09090455639991246
+  },
+  "matrix_metric_rows": [
+    {
+      "mode": "self_tuned_knn",
+      "block_contrast": 0.3769463607058805,
+      "spectral_gap": 0.1821292755570799,
+      "mean_similarity": 0.1113634873286226
+    },
+    {
+      "mode": "none",
+      "block_contrast": 0.2010139780606139,
+      "spectral_gap": 0.4795813132141399,
+      "mean_similarity": 0.4358299044436664
+    }
+  ],
+  "retrain_rows": [
+    {
+      "mode": "none",
+      "accuracy": 0.3,
+      "macro_f1": 0.2656798245614035,
+      "weighted_f1": 0.26046783625730996,
+      "n_rows": 120,
+      "n_classes": 4
+    },
+    {
+      "mode": "self_tuned_knn",
+      "accuracy": 0.16666666666666666,
+      "macro_f1": 0.16677807486631016,
+      "weighted_f1": 0.1695632798573975,
+      "n_rows": 120,
+      "n_classes": 4
+    }
+  ]
+}

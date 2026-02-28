@@ -1,0 +1,14 @@
+{
+  "mode": "sinkhorn",
+  "n_rows": 45,
+  "n_classes": 4,
+  "accuracy": 0.08333333333333333,
+  "macro_f1": 0.05555555555555555,
+  "weighted_f1": 0.05555555555555555,
+  "random_state": 42,
+  "max_files": 45,
+  "n_bins": 4,
+  "block_contrast": 0.2065744738472749,
+  "spectral_gap": 0.22514685850300453,
+  "mean_similarity": 0.029583369628384683
+}

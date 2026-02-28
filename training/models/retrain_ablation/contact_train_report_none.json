@@ -1,0 +1,14 @@
+{
+  "mode": "none",
+  "n_rows": 45,
+  "n_classes": 4,
+  "accuracy": 0.08333333333333333,
+  "macro_f1": 0.08333333333333333,
+  "weighted_f1": 0.08333333333333333,
+  "random_state": 42,
+  "max_files": 45,
+  "n_bins": 4,
+  "block_contrast": 0.20101397806061394,
+  "spectral_gap": 0.4795813132141399,
+  "mean_similarity": 0.4358299044436664
+}

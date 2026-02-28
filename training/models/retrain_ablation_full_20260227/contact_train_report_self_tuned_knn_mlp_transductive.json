@@ -1,0 +1,19 @@
+{
+  "mode": "self_tuned_knn",
+  "model_family": "mlp",
+  "leakage_mode": "transductive",
+  "n_rows": 95,
+  "n_classes": 4,
+  "n_train": 71,
+  "n_test": 24,
+  "accuracy": 0.3333333333333333,
+  "macro_f1": 0.3489190548014077,
+  "weighted_f1": 0.3329981565275683,
+  "random_state": 42,
+  "max_files": 120,
+  "n_bins": 4,
+  "test_size": 0.25,
+  "block_contrast": 0.1347631766855499,
+  "spectral_gap": 0.13598606548780856,
+  "mean_similarity": 0.04269859422539869
+}

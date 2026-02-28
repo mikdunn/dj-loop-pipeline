@@ -1,0 +1,19 @@
+{
+  "mode": "self_tuned_knn",
+  "model_family": "rf",
+  "leakage_mode": "strict_train_only",
+  "n_rows": 95,
+  "n_classes": 4,
+  "n_train": 71,
+  "n_test": 24,
+  "accuracy": 0.20833333333333334,
+  "macro_f1": 0.20833333333333331,
+  "weighted_f1": 0.2222222222222222,
+  "random_state": 42,
+  "max_files": 120,
+  "n_bins": 4,
+  "test_size": 0.25,
+  "block_contrast": 0.17593163559059116,
+  "spectral_gap": 0.15292092577418265,
+  "mean_similarity": 0.055256923752493074
+}

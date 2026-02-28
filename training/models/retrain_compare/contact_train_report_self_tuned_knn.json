@@ -1,0 +1,11 @@
+{
+  "mode": "self_tuned_knn",
+  "n_rows": 120,
+  "n_classes": 4,
+  "accuracy": 0.16666666666666666,
+  "macro_f1": 0.16677807486631016,
+  "weighted_f1": 0.1695632798573975,
+  "random_state": 42,
+  "max_files": 120,
+  "n_bins": 4
+}

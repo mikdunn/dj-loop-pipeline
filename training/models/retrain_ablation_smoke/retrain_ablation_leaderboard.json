@@ -1,0 +1,110 @@
+{
+  "modes": [
+    "none"
+  ],
+  "models": [
+    "rf",
+    "svm_rbf_calibrated"
+  ],
+  "leakage_modes": [
+    "transductive",
+    "strict_train_only"
+  ],
+  "best": {
+    "mode": "none",
+    "model_family": "rf",
+    "leakage_mode": "transductive",
+    "n_rows": 16,
+    "n_classes": 3,
+    "n_train": 12,
+    "n_test": 4,
+    "accuracy": 0.5,
+    "macro_f1": 0.4444444444444444,
+    "weighted_f1": 0.5,
+    "random_state": 42,
+    "max_files": 16,
+    "n_bins": 3,
+    "test_size": 0.25,
+    "block_contrast": 0.334843515776947,
+    "spectral_gap": 0.4304517114990518,
+    "mean_similarity": 0.3831190907108029
+  },
+  "rows": [
+    {
+      "mode": "none",
+      "model_family": "rf",
+      "leakage_mode": "transductive",
+      "n_rows": 16,
+      "n_classes": 3,
+      "n_train": 12,
+      "n_test": 4,
+      "accuracy": 0.5,
+      "macro_f1": 0.4444444444444444,
+      "weighted_f1": 0.5,
+      "random_state": 42,
+      "max_files": 16,
+      "n_bins": 3,
+      "test_size": 0.25,
+      "block_contrast": 0.334843515776947,
+      "spectral_gap": 0.4304517114990518,
+      "mean_similarity": 0.3831190907108029
+    },
+    {
+      "mode": "none",
+      "model_family": "rf",
+      "leakage_mode": "strict_train_only",
+      "n_rows": 16,
+      "n_classes": 3,
+      "n_train": 12,
+      "n_test": 4,
+      "accuracy": 0.5,
+      "macro_f1": 0.38888888888888884,
+      "weighted_f1": 0.4583333333333333,
+      "random_state": 42,
+      "max_files": 16,
+      "n_bins": 3,
+      "test_size": 0.25,
+      "block_contrast": 0.3940352344869444,
+      "spectral_gap": 0.36478154933394596,
+      "mean_similarity": 0.32365815356739047
+    },
+    {
+      "mode": "none",
+      "model_family": "svm_rbf_calibrated",
+      "leakage_mode": "transductive",
+      "n_rows": 16,
+      "n_classes": 3,
+      "n_train": 12,
+      "n_test": 4,
+      "accuracy": 0.25,
+      "macro_f1": 0.16666666666666666,
+      "weighted_f1": 0.25,
+      "random_state": 42,
+      "max_files": 16,
+      "n_bins": 3,
+      "test_size": 0.25,
+      "block_contrast": 0.334843515776947,
+      "spectral_gap": 0.4304517114990518,
+      "mean_similarity": 0.3831190907108029
+    },
+    {
+      "mode": "none",
+      "model_family": "svm_rbf_calibrated",
+      "leakage_mode": "strict_train_only",
+      "n_rows": 16,
+      "n_classes": 3,
+      "n_train": 12,
+      "n_test": 4,
+      "accuracy": 0.25,
+      "macro_f1": 0.16666666666666666,
+      "weighted_f1": 0.25,
+      "random_state": 42,
+      "max_files": 16,
+      "n_bins": 3,
+      "test_size": 0.25,
+      "block_contrast": 0.3940352344869444,
+      "spectral_gap": 0.36478154933394596,
+      "mean_similarity": 0.32365815356739047
+    }
+  ]
+}
