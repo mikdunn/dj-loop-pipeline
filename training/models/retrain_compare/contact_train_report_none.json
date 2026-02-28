@@ -1,0 +1,11 @@
+{
+  "mode": "none",
+  "n_rows": 120,
+  "n_classes": 4,
+  "accuracy": 0.3,
+  "macro_f1": 0.2656798245614035,
+  "weighted_f1": 0.26046783625730996,
+  "random_state": 42,
+  "max_files": 120,
+  "n_bins": 4
+}
