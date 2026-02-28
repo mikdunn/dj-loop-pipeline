@@ -160,7 +160,16 @@ def _slice_with_offset(y: np.ndarray, n_dividers: int, offset_samples: int) -> L
     return segments
 
 
-def _structure_scores_for_dividers(y: np.ndarray, sr: int, n_dividers: int, phase_steps: int = 24) -> Dict:
+def _structure_scores_for_dividers(
+    y: np.ndarray,
+    sr: int,
+    n_dividers: int,
+    phase_steps: int = 24,
+    drum_bundle: Optional[Dict] = None,
+    min_conf: float = 0.25,
+    drum_weight: float = 0.18,
+    periodicity_weight: float = 0.10,
+) -> Dict:
     n = len(y)
     seg_len = max(1, n // n_dividers)
 
@@ -210,17 +219,53 @@ def _structure_scores_for_dividers(y: np.ndarray, sr: int, n_dividers: int, phas
         # Smooth structural score
         structure_score = float(0.45 * repetition_score + 0.35 * half_similarity + 0.20 * max(0.0, superimpose))
 
+        drum_score = 0.0
+        periodicity_score = 0.0
+        periodicity_kick = 0.0
+        periodicity_snare = 0.0
+        periodicity_hihat = 0.0
+        periodicity_best_lag = 0
+        periodicity_pattern = ""
+        if drum_bundle is not None:
+            divider_preds = _divider_drum_predictions(
+                segments=segments,
+                sr=sr,
+                drum_bundle=drum_bundle,
+                min_conf=min_conf,
+            )
+            drum_score = _drum_alignment_score(divider_preds=divider_preds, n_dividers=n_dividers)
+            prof = _periodicity_profile(divider_preds=divider_preds, n_dividers=n_dividers)
+            periodicity_score = float(prof.get("periodicity_score", 0.0))
+            periodicity_kick = float(prof.get("periodicity_kick", 0.0))
+            periodicity_snare = float(prof.get("periodicity_snare", 0.0))
+            periodicity_hihat = float(prof.get("periodicity_hihat", 0.0))
+            periodicity_best_lag = int(prof.get("periodicity_best_lag", 0))
+            periodicity_pattern = str(prof.get("periodicity_pattern", ""))
+
+        structure_weight = max(0.0, 1.0 - float(drum_weight) - float(periodicity_weight))
+        combined_score = float(
+            structure_weight * structure_score + float(drum_weight) * drum_score + float(periodicity_weight) * periodicity_score
+        )
+
         entry = {
             "offset_samples": int(offset),
             "repetition_score": repetition_score,
             "half_similarity": float(half_similarity),
             "superimpose_similarity": float(superimpose),
             "structure_score": structure_score,
+            "drum_alignment_score": float(drum_score),
+            "periodicity_score": float(periodicity_score),
+            "periodicity_kick": float(periodicity_kick),
+            "periodicity_snare": float(periodicity_snare),
+            "periodicity_hihat": float(periodicity_hihat),
+            "periodicity_best_lag": int(periodicity_best_lag),
+            "periodicity_pattern": periodicity_pattern,
+            "combined_score": float(combined_score),
             "segments": segments,
             "similarity_matrix": sims.tolist(),
         }
 
-        if best is None or entry["structure_score"] > best["structure_score"]:
+        if best is None or entry["combined_score"] > best.get("combined_score", best["structure_score"]):
             best = entry
 
     if best is None:
@@ -230,6 +275,14 @@ def _structure_scores_for_dividers(y: np.ndarray, sr: int, n_dividers: int, phas
             "half_similarity": 0.0,
             "superimpose_similarity": 0.0,
             "structure_score": 0.0,
+            "drum_alignment_score": 0.0,
+            "periodicity_score": 0.0,
+            "periodicity_kick": 0.0,
+            "periodicity_snare": 0.0,
+            "periodicity_hihat": 0.0,
+            "periodicity_best_lag": 0,
+            "periodicity_pattern": "",
+            "combined_score": 0.0,
             "segments": [],
             "similarity_matrix": [],
         }
@@ -390,6 +443,108 @@ def _divider_drum_predictions(
     return out
 
 
+def _prob_from_prediction(pred: Dict, tags: Tuple[str, ...]) -> float:
+    tags_l = tuple(t.lower() for t in tags)
+    probs = pred.get("probs", {}) or {}
+
+    best = 0.0
+    for k, v in probs.items():
+        kk = str(k).lower()
+        if any(t in kk for t in tags_l):
+            try:
+                best = max(best, float(v))
+            except Exception:
+                pass
+
+    lbl = str(pred.get("predicted_label", "")).lower()
+    conf = float(pred.get("confidence", 0.0))
+    if any(t in lbl for t in tags_l):
+        best = max(best, conf)
+    return float(best)
+
+
+def _drum_alignment_score(divider_preds: List[Dict], n_dividers: int) -> float:
+    if not divider_preds or n_dividers <= 0:
+        return 0.0
+
+    beat1 = _prob_from_prediction(divider_preds[0], ("kick", "bd"))
+
+    idxs: List[int] = []
+    q1 = n_dividers // 4
+    q3 = (3 * n_dividers) // 4
+    for i in (q1, q3):
+        if 0 <= i < len(divider_preds):
+            idxs.append(i)
+
+    if idxs:
+        backbeats = [_prob_from_prediction(divider_preds[i], ("snare", "clap")) for i in idxs]
+        backbeat = float(np.mean(backbeats))
+    else:
+        backbeat = 0.0
+
+    return float(0.70 * beat1 + 0.30 * backbeat)
+
+
+def _lag_similarity(vec: np.ndarray, lag: int) -> float:
+    if vec.size == 0 or lag <= 0 or lag >= vec.size:
+        return 0.0
+    return max(0.0, _safe_cosine(vec.astype(float), np.roll(vec.astype(float), lag)))
+
+
+def _periodicity_profile(divider_preds: List[Dict], n_dividers: int) -> Dict[str, float | int | str]:
+    n = int(max(1, n_dividers))
+    if not divider_preds:
+        return {
+            "periodicity_score": 0.0,
+            "periodicity_kick": 0.0,
+            "periodicity_snare": 0.0,
+            "periodicity_hihat": 0.0,
+            "periodicity_best_lag": 0,
+            "periodicity_pattern": "",
+        }
+
+    kick = np.array([_prob_from_prediction(p, ("kick", "bd")) for p in divider_preds], dtype=float)
+    snare = np.array([_prob_from_prediction(p, ("snare", "clap")) for p in divider_preds], dtype=float)
+    hihat = np.array([_prob_from_prediction(p, ("hihat", "hat")) for p in divider_preds], dtype=float)
+
+    lag_candidates: List[int] = []
+    if n >= 4:
+        lag_candidates.append(n // 4)
+    if n >= 2:
+        lag_candidates.append(n // 2)
+    lag_candidates = sorted({lag for lag in lag_candidates if 0 < lag < n})
+    if not lag_candidates and n > 1:
+        lag_candidates = [1]
+
+    best_lag = 0
+    best_lag_score = -1.0
+    for lag in lag_candidates:
+        s = float(np.mean([_lag_similarity(kick, lag), _lag_similarity(snare, lag), _lag_similarity(hihat, lag)]))
+        if s > best_lag_score:
+            best_lag_score = s
+            best_lag = int(lag)
+
+    p_kick = max((_lag_similarity(kick, lag) for lag in lag_candidates), default=0.0)
+    p_snare = max((_lag_similarity(snare, lag) for lag in lag_candidates), default=0.0)
+    p_hihat = max((_lag_similarity(hihat, lag) for lag in lag_candidates), default=0.0)
+    p_overall = float(0.50 * p_kick + 0.35 * p_snare + 0.15 * p_hihat)
+
+    symbols: List[str] = []
+    for i in range(min(n, len(divider_preds))):
+        vals = {"K": float(kick[i]), "S": float(snare[i]), "H": float(hihat[i])}
+        lbl, v = max(vals.items(), key=lambda kv: kv[1])
+        symbols.append(lbl if v >= 0.20 else "x")
+
+    return {
+        "periodicity_score": p_overall,
+        "periodicity_kick": float(p_kick),
+        "periodicity_snare": float(p_snare),
+        "periodicity_hihat": float(p_hihat),
+        "periodicity_best_lag": int(best_lag),
+        "periodicity_pattern": "".join(symbols),
+    }
+
+
 def analyze_file(
     file_path: Path,
     drum_bundle: Optional[Dict],
@@ -415,17 +570,35 @@ def analyze_file(
     except Exception:
         pass
 
-    tempo = _estimate_tempo(y, sr=fs)
-    beat_times = _estimate_beat_times(y, sr=fs)
+    sr_i = int(fs)
 
-    score4 = _structure_scores_for_dividers(y, sr=fs, n_dividers=4)
-    score8 = _structure_scores_for_dividers(y, sr=fs, n_dividers=8)
+    # Run drum-informed structure selection first (when drum model is available).
+    score4 = _structure_scores_for_dividers(
+        y,
+        sr=sr_i,
+        n_dividers=4,
+        drum_bundle=drum_bundle,
+        min_conf=min_conf,
+        drum_weight=0.18,
+    )
+    score8 = _structure_scores_for_dividers(
+        y,
+        sr=sr_i,
+        n_dividers=8,
+        drum_bundle=drum_bundle,
+        min_conf=min_conf,
+        drum_weight=0.18,
+    )
 
-    # Choose divider count based on stronger structure score, with a mild 4-divider simplicity bias.
-    adjusted4 = score4["structure_score"] + 0.015
-    adjusted8 = score8["structure_score"]
+    # Choose divider count based on combined (structure + drum) score, with mild 4-divider simplicity bias.
+    adjusted4 = score4.get("combined_score", score4["structure_score"]) + 0.015
+    adjusted8 = score8.get("combined_score", score8["structure_score"])
     chosen = 4 if adjusted4 >= adjusted8 else 8
     best = score4 if chosen == 4 else score8
+
+    # Then estimate tempo/beat grid for boundary snapping.
+    tempo = _estimate_tempo(y, sr=sr_i)
+    beat_times = _estimate_beat_times(y, sr=sr_i)
 
     structure_pattern = _assign_symbol_pattern(best["similarity_matrix"], threshold=structure_threshold)
 
@@ -433,13 +606,13 @@ def analyze_file(
     max_shift = max(0.03, 0.35 * (float(len(y) / fs) / float(chosen)))
     snapped_boundaries = _snap_boundaries_to_beats(linear_boundaries, beat_times=beat_times, max_shift_sec=max_shift)
 
-    segments = _segments_from_boundaries(y, sr=fs, boundaries_sec=snapped_boundaries)
+    segments = _segments_from_boundaries(y, sr=sr_i, boundaries_sec=snapped_boundaries)
     if len(segments) != chosen:
         segments = best["segments"]
         snapped_boundaries = linear_boundaries
 
-    durations = [float(len(seg) / fs) for seg in segments]
-    divider_preds = _divider_drum_predictions(segments, sr=fs, drum_bundle=drum_bundle, min_conf=min_conf)
+    durations = [float(len(seg) / sr_i) for seg in segments]
+    divider_preds = _divider_drum_predictions(segments, sr=sr_i, drum_bundle=drum_bundle, min_conf=min_conf)
 
     return {
         "file": str(file_path),
@@ -447,11 +620,23 @@ def analyze_file(
         "tempo_est": float(tempo),
         "chosen_dividers": int(chosen),
         "structure_score": float(best["structure_score"]),
+        "drum_alignment_score": float(best.get("drum_alignment_score", 0.0)),
+        "periodicity_score": float(best.get("periodicity_score", 0.0)),
+        "periodicity_kick": float(best.get("periodicity_kick", 0.0)),
+        "periodicity_snare": float(best.get("periodicity_snare", 0.0)),
+        "periodicity_hihat": float(best.get("periodicity_hihat", 0.0)),
+        "periodicity_best_lag": int(best.get("periodicity_best_lag", 0)),
+        "periodicity_pattern": str(best.get("periodicity_pattern", "")),
+        "combined_structure_score": float(best.get("combined_score", best["structure_score"])),
         "repetition_score": float(best["repetition_score"]),
         "half_similarity": float(best["half_similarity"]),
         "superimpose_similarity": float(best["superimpose_similarity"]),
         "score_4_dividers": float(score4["structure_score"]),
         "score_8_dividers": float(score8["structure_score"]),
+        "score_4_periodicity": float(score4.get("periodicity_score", 0.0)),
+        "score_8_periodicity": float(score8.get("periodicity_score", 0.0)),
+        "score_4_combined": float(score4.get("combined_score", score4["structure_score"])),
+        "score_8_combined": float(score8.get("combined_score", score8["structure_score"])),
         "structure_pattern": structure_pattern,
         "divider_boundaries_sec": snapped_boundaries,
         "divider_durations_sec": durations,
@@ -503,6 +688,8 @@ def analyze_folder(
                 "chosen_dividers": result["chosen_dividers"],
                 "structure_pattern": result["structure_pattern"],
                 "structure_score": result["structure_score"],
+                "periodicity_score": result.get("periodicity_score", 0.0),
+                "periodicity_pattern": result.get("periodicity_pattern", ""),
                 "repetition_score": result["repetition_score"],
                 "half_similarity": result["half_similarity"],
                 "superimpose_similarity": result["superimpose_similarity"],

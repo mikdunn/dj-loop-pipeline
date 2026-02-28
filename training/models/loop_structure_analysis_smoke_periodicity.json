@@ -1,0 +1,214 @@
+{
+  "n_files": 3,
+  "folder": "c:\\Users\\dunnm\\dj-loop-pipeline\\data\\exported_loops",
+  "drum_model": "training\\models\\drum_sound_classifier.joblib",
+  "details": [
+    {
+      "file": "c:\\Users\\dunnm\\dj-loop-pipeline\\data\\exported_loops\\01 N\u00e3\\01 N\u00e3_loop267.wav",
+      "duration_sec": 1.7298866213151927,
+      "tempo_est": 135.99917763157896,
+      "chosen_dividers": 4,
+      "structure_score": 0.7969447470307223,
+      "drum_alignment_score": 0.0,
+      "periodicity_score": 0.0,
+      "periodicity_kick": 0.0,
+      "periodicity_snare": 0.0,
+      "periodicity_hihat": 0.0,
+      "periodicity_best_lag": 0,
+      "periodicity_pattern": "",
+      "combined_structure_score": 0.5738002178621201,
+      "repetition_score": 0.9898292280424517,
+      "half_similarity": 0.9948122150584287,
+      "superimpose_similarity": 0.016686595705844617,
+      "score_4_dividers": 0.7969447470307223,
+      "score_8_dividers": 0.7940032814267642,
+      "score_4_periodicity": 0.0,
+      "score_8_periodicity": 0.0,
+      "score_4_combined": 0.5738002178621201,
+      "score_8_combined": 0.5716823626272703,
+      "structure_pattern": "AAAA",
+      "divider_boundaries_sec": [
+        0.0,
+        0.44117913832199546,
+        0.8823582766439909,
+        1.3003174603174603,
+        1.7298866213151927
+      ],
+      "divider_durations_sec": [
+        0.44117913832199546,
+        0.44117913832199546,
+        0.4179591836734694,
+        0.4295691609977324
+      ],
+      "divider_drum_predictions": [
+        {
+          "divider_index": 1,
+          "predicted_label": "unavailable",
+          "confidence": 0.0,
+          "probs": {},
+          "duration_sec": 0.44117913832199546
+        },
+        {
+          "divider_index": 2,
+          "predicted_label": "unavailable",
+          "confidence": 0.0,
+          "probs": {},
+          "duration_sec": 0.44117913832199546
+        },
+        {
+          "divider_index": 3,
+          "predicted_label": "unavailable",
+          "confidence": 0.0,
+          "probs": {},
+          "duration_sec": 0.4179591836734694
+        },
+        {
+          "divider_index": 4,
+          "predicted_label": "unavailable",
+          "confidence": 0.0,
+          "probs": {},
+          "duration_sec": 0.4295691609977324
+        }
+      ],
+      "offset_samples": 8741
+    },
+    {
+      "file": "c:\\Users\\dunnm\\dj-loop-pipeline\\data\\exported_loops\\01 N\u00e3\\01 N\u00e3_loop268.wav",
+      "duration_sec": 1.7298866213151927,
+      "tempo_est": 143.5546875,
+      "chosen_dividers": 4,
+      "structure_score": 0.7975872309259412,
+      "drum_alignment_score": 0.0,
+      "periodicity_score": 0.0,
+      "periodicity_kick": 0.0,
+      "periodicity_snare": 0.0,
+      "periodicity_hihat": 0.0,
+      "periodicity_best_lag": 0,
+      "periodicity_pattern": "",
+      "combined_structure_score": 0.5742628062666777,
+      "repetition_score": 0.9901159549091822,
+      "half_similarity": 0.9944991634390956,
+      "superimpose_similarity": 0.019801720065628445,
+      "score_4_dividers": 0.7975872309259412,
+      "score_8_dividers": 0.7963712024532666,
+      "score_4_periodicity": 0.0,
+      "score_8_periodicity": 0.0,
+      "score_4_combined": 0.5742628062666777,
+      "score_8_combined": 0.573387265766352,
+      "structure_pattern": "AAAA",
+      "divider_boundaries_sec": [
+        0.0,
+        0.46439909297052157,
+        0.8823582766439909,
+        1.2770975056689342,
+        1.7298866213151927
+      ],
+      "divider_durations_sec": [
+        0.46439909297052157,
+        0.4179591836734694,
+        0.3947392290249433,
+        0.4527891156462585
+      ],
+      "divider_drum_predictions": [
+        {
+          "divider_index": 1,
+          "predicted_label": "unavailable",
+          "confidence": 0.0,
+          "probs": {},
+          "duration_sec": 0.46439909297052157
+        },
+        {
+          "divider_index": 2,
+          "predicted_label": "unavailable",
+          "confidence": 0.0,
+          "probs": {},
+          "duration_sec": 0.4179591836734694
+        },
+        {
+          "divider_index": 3,
+          "predicted_label": "unavailable",
+          "confidence": 0.0,
+          "probs": {},
+          "duration_sec": 0.3947392290249433
+        },
+        {
+          "divider_index": 4,
+          "predicted_label": "unavailable",
+          "confidence": 0.0,
+          "probs": {},
+          "duration_sec": 0.4527891156462585
+        }
+      ],
+      "offset_samples": 8741
+    },
+    {
+      "file": "c:\\Users\\dunnm\\dj-loop-pipeline\\data\\exported_loops\\01 N\u00e3\\01 N\u00e3_loop269.wav",
+      "duration_sec": 1.7182766439909296,
+      "tempo_est": 143.5546875,
+      "chosen_dividers": 4,
+      "structure_score": 0.7828213092351843,
+      "drum_alignment_score": 0.0,
+      "periodicity_score": 0.0,
+      "periodicity_kick": 0.0,
+      "periodicity_snare": 0.0,
+      "periodicity_hihat": 0.0,
+      "periodicity_best_lag": 0,
+      "periodicity_pattern": "",
+      "combined_structure_score": 0.5636313426493328,
+      "repetition_score": 0.9761494631610226,
+      "half_similarity": 0.9777746291784805,
+      "superimpose_similarity": 0.00666465300128027,
+      "score_4_dividers": 0.7828213092351843,
+      "score_8_dividers": 0.7861188554623544,
+      "score_4_periodicity": 0.0,
+      "score_8_periodicity": 0.0,
+      "score_4_combined": 0.5636313426493328,
+      "score_8_combined": 0.5660055759328952,
+      "structure_pattern": "AAAA",
+      "divider_boundaries_sec": [
+        0.0,
+        0.44117913832199546,
+        0.8591383219954648,
+        1.2770975056689342,
+        1.7182766439909296
+      ],
+      "divider_durations_sec": [
+        0.44117913832199546,
+        0.4179591836734694,
+        0.4179591836734694,
+        0.44117913832199546
+      ],
+      "divider_drum_predictions": [
+        {
+          "divider_index": 1,
+          "predicted_label": "unavailable",
+          "confidence": 0.0,
+          "probs": {},
+          "duration_sec": 0.44117913832199546
+        },
+        {
+          "divider_index": 2,
+          "predicted_label": "unavailable",
+          "confidence": 0.0,
+          "probs": {},
+          "duration_sec": 0.4179591836734694
+        },
+        {
+          "divider_index": 3,
+          "predicted_label": "unavailable",
+          "confidence": 0.0,
+          "probs": {},
+          "duration_sec": 0.4179591836734694
+        },
+        {
+          "divider_index": 4,
+          "predicted_label": "unavailable",
+          "confidence": 0.0,
+          "probs": {},
+          "duration_sec": 0.44117913832199546
+        }
+      ],
+      "offset_samples": 0
+    }
+  ]
+}

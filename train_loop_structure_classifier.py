@@ -1,7 +1,8 @@
 import argparse
 import json
+import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import joblib
 import numpy as np
@@ -10,7 +11,11 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 
-from analyze_loop_structure import analyze_file, collect_audio_files
+ROOT = Path(__file__).resolve().parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from analyze_loop_structure import analyze_file, collect_audio_files  # type: ignore
 
 
 KNOWN_DRUM_LABELS = ["kick", "snare", "hihat", "clap", "tom", "perc", "uncertain", "unavailable"]
@@ -69,11 +74,22 @@ def row_from_analysis(result: Dict) -> Dict:
         "duration_sec": float(result.get("duration_sec", 0.0)),
         "tempo_est": float(result.get("tempo_est", 120.0)),
         "structure_score": float(result.get("structure_score", 0.0)),
+        "drum_alignment_score": float(result.get("drum_alignment_score", 0.0)),
+        "combined_structure_score": float(result.get("combined_structure_score", 0.0)),
+        "periodicity_score": float(result.get("periodicity_score", 0.0)),
+        "periodicity_kick": float(result.get("periodicity_kick", 0.0)),
+        "periodicity_snare": float(result.get("periodicity_snare", 0.0)),
+        "periodicity_hihat": float(result.get("periodicity_hihat", 0.0)),
+        "periodicity_best_lag": float(result.get("periodicity_best_lag", 0.0)),
         "repetition_score": float(result.get("repetition_score", 0.0)),
         "half_similarity": float(result.get("half_similarity", 0.0)),
         "superimpose_similarity": float(result.get("superimpose_similarity", 0.0)),
         "score_4_dividers": float(result.get("score_4_dividers", 0.0)),
         "score_8_dividers": float(result.get("score_8_dividers", 0.0)),
+        "score_4_periodicity": float(result.get("score_4_periodicity", 0.0)),
+        "score_8_periodicity": float(result.get("score_8_periodicity", 0.0)),
+        "score_4_combined": float(result.get("score_4_combined", 0.0)),
+        "score_8_combined": float(result.get("score_8_combined", 0.0)),
         "offset_samples": float(result.get("offset_samples", 0.0)),
     }
 
@@ -190,7 +206,7 @@ def train_classifier(df: pd.DataFrame, model_out: Path, report_out: Path) -> Non
     clf.fit(x_train, y_train)
 
     y_pred = clf.predict(x_test)
-    report = classification_report(y_test, y_pred, output_dict=True, zero_division=0)
+    report = cast(Dict[str, Any], classification_report(y_test, y_pred, output_dict=True, zero_division=0))
     labels = sorted(y.unique().tolist())
     cm = confusion_matrix(y_test, y_pred, labels=labels)
 
