@@ -1,13 +1,19 @@
+"""Compatibility launcher/wrapper for relocated script.
+
+New location: processes/05_export/batch_export_loops.py
+"""
+
 from pathlib import Path
-from pipelines.sample_pack_pipeline_ml import LoopPipelineML
-from pipelines.export_top_loops_pro import export_top_loops
+import runpy as _runpy
 
-pipeline = LoopPipelineML("training/models/loop_ranker.json","training/models/features.json")
+_TARGET = Path(__file__).resolve().parent / r"processes/05_export/batch_export_loops.py"
+_NS = _runpy.run_path(str(_TARGET))
 
-RAW_AUDIO_DIR = Path("data/raw_audio")
-OUTPUT_DIR = Path("data/exported_loops")
-TOP_K = 5
+for _k, _v in _NS.items():
+    if not _k.startswith("__"):
+        globals().setdefault(_k, _v)
 
-for file in RAW_AUDIO_DIR.glob("*.wav"):
-    df_ranked = pipeline.process_track(file)
-    export_top_loops(df_ranked, file, OUTPUT_DIR/file.stem, top_k=TOP_K, export_mp3=True)
+if __name__ == "__main__":
+    _main = _NS.get("main")
+    if callable(_main):
+        _main()
