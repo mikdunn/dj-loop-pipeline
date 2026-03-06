@@ -1,0 +1,21 @@
+{
+  "mode": "none",
+  "model_family": "mlp",
+  "leakage_mode": "strict_train_only",
+  "n_rows": 95,
+  "n_classes": 4,
+  "n_train": 71,
+  "n_test": 24,
+  "accuracy": 0.5,
+  "macro_f1": 0.5,
+  "weighted_f1": 0.5089285714285715,
+  "random_state": 42,
+  "max_files": 200,
+  "n_bins": 4,
+  "test_size": 0.25,
+  "use_ar_features": true,
+  "ar_order": 6,
+  "block_contrast": 0.3289914275617343,
+  "spectral_gap": 0.48602192037431713,
+  "mean_similarity": 0.32312638631885665
+}

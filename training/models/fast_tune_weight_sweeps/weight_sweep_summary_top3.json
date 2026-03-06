@@ -1,0 +1,47 @@
+{
+  "ranking_by_composite_uplift": [
+    {
+      "weights": {
+        "model_score": 0.65,
+        "periodicity": 0.2,
+        "drum_alignment": 0.15
+      },
+      "delta_topk_target": 0.0,
+      "delta_ndcg_at_k": 0.00027594692171017954,
+      "composite_uplift_sum": 0.00027594692171017954,
+      "source_metrics": "training/models/fast_tune_weight_sweeps/eval_metrics_065_020_015.json"
+    },
+    {
+      "weights": {
+        "model_score": 0.75,
+        "periodicity": 0.15,
+        "drum_alignment": 0.1
+      },
+      "delta_topk_target": 0.0,
+      "delta_ndcg_at_k": -0.00011103645748855584,
+      "composite_uplift_sum": -0.00011103645748855584,
+      "source_metrics": "training/models/fast_tune_weight_sweeps/eval_metrics_075_015_010.json"
+    },
+    {
+      "weights": {
+        "model_score": 0.8,
+        "periodicity": 0.1,
+        "drum_alignment": 0.1
+      },
+      "delta_topk_target": 0.0,
+      "delta_ndcg_at_k": -0.00011103645748855584,
+      "composite_uplift_sum": -0.00011103645748855584,
+      "source_metrics": "training/models/fast_tune_weight_sweeps/eval_metrics_080_010_010.json"
+    }
+  ],
+  "winner": {
+    "model_score": 0.65,
+    "periodicity": 0.2,
+    "drum_alignment": 0.15
+  },
+  "composite_uplift_formula": "delta_topk_target + delta_ndcg_at_k",
+  "notes": [
+    "All runs used fallback fixed-window candidates for short clips in evaluate_loop_models.py.",
+    "delta_topk_target was unchanged across these three runs on this validation set."
+  ]
+}

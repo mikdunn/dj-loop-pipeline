@@ -4,6 +4,8 @@
 
 Automatically generates DJ/DAW-ready loops from audio tracks using a combination of hand-crafted features, pretrained music embeddings, and XGBoost machine learning scoring.
 
+For a process-first navigation guide, see `processes/README.md`.
+
 ---
 
 ## Features

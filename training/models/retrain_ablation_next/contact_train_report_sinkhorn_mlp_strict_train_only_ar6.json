@@ -1,0 +1,21 @@
+{
+  "mode": "sinkhorn",
+  "model_family": "mlp",
+  "leakage_mode": "strict_train_only",
+  "n_rows": 95,
+  "n_classes": 4,
+  "n_train": 71,
+  "n_test": 24,
+  "accuracy": 0.4583333333333333,
+  "macro_f1": 0.43040293040293043,
+  "weighted_f1": 0.45146520146520147,
+  "random_state": 42,
+  "max_files": 200,
+  "n_bins": 4,
+  "test_size": 0.25,
+  "use_ar_features": true,
+  "ar_order": 6,
+  "block_contrast": 0.15980783087766867,
+  "spectral_gap": 0.31400278321225095,
+  "mean_similarity": 0.04434746848912506
+}

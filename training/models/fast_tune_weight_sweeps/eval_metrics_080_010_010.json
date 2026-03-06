@@ -1,0 +1,45 @@
+{
+  "model_a": {
+    "name": "C:\\Users\\dunnm\\AppData\\Roaming\\Code\\User\\globalStorage\\github.remotehub\\97e68e6861b5eb731c023ae3ca3e3578\\changestore\\vscode-vfs-github\\mikdunn\\dj-loop-pipeline\\training\\models\\loop_ranker_drums_only.json",
+    "feature_info": {
+      "feature_count": 13,
+      "missing_features_filled_zero": 2
+    },
+    "metrics": {
+      "rows": 131,
+      "tracks": 95,
+      "top_k": 5,
+      "mae": 0.1661884192299213,
+      "pearson": 0.6707173296196001,
+      "spearman": 0.7363470394603373,
+      "mean_track_topk_target": 0.4425115551310051,
+      "mean_track_random_topk_target": 0.4418393261398225,
+      "uplift_vs_random_pct": 0.15214331006731524,
+      "mean_track_ndcg_at_k": 0.9984785416679148
+    },
+    "metrics_composite": {
+      "rows": 131,
+      "tracks": 95,
+      "top_k": 5,
+      "mae": 0.1172321798498763,
+      "pearson": 0.6728240758052381,
+      "spearman": 0.7236320930977421,
+      "mean_track_topk_target": 0.4425115551310051,
+      "mean_track_random_topk_target": 0.4418393261398225,
+      "uplift_vs_random_pct": 0.15214331006731524,
+      "mean_track_ndcg_at_k": 0.9983675052104263
+    },
+    "composite_vs_raw": {
+      "delta_topk_target": 0.0,
+      "delta_ndcg_at_k": -0.00011103645748855584
+    }
+  },
+  "composite_eval": {
+    "enabled": true,
+    "weights_requested": {
+      "model_score": 0.8,
+      "periodicity": 0.1,
+      "drum_alignment": 0.1
+    }
+  }
+}

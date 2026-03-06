@@ -66,19 +66,52 @@ def build_eval_rows(audio_files: List[Path], bars: Sequence[int] = (4, 8), sr: i
     for i, audio_path in enumerate(audio_files, start=1):
         try:
             y, file_sr = librosa.load(str(audio_path), sr=sr, mono=True)
-            bpm, beats = librosa.beat.beat_track(y=y, sr=file_sr, units="time")
-            cands = generate_bar_aligned_candidates(audio_path.stem, beats, bpm, bars)
+            try:
+                bpm, beats = librosa.beat.beat_track(y=y, sr=file_sr, units="time")
+                cands = generate_bar_aligned_candidates(audio_path.stem, beats, bpm, bars)
+            except Exception:
+                bpm, beats = 120.0, np.array([], dtype=float)
+                cands = []
+
+            # Fallback for very short/beat-sparse clips: fixed windows.
+            if not cands:
+                duration = len(y) / float(file_sr) if file_sr > 0 else 0.0
+                win_sec = 2.0
+                stride_sec = 1.0
+                bpm_arr = np.asarray(bpm, dtype=float).ravel()
+                bpm_value = float(bpm_arr[0]) if bpm_arr.size > 0 and np.isfinite(bpm_arr[0]) else 120.0
+                starts = np.arange(0.0, max(0.0, duration - win_sec) + 1e-9, stride_sec, dtype=float)
+                cands = [
+                    {
+                        "start_time": float(s),
+                        "end_time": float(s + win_sec),
+                        "bars": 0,
+                        "bpm": bpm_value,
+                    }
+                    for s in starts
+                ]
 
             for cand in cands:
-                feats = extract_full_features(y, file_sr, cand.start_time, cand.end_time)
+                if hasattr(cand, "start_time"):
+                    start_time = float(cand.start_time)
+                    end_time = float(cand.end_time)
+                    bars_val = int(cand.bars)
+                    bpm_val = float(cand.bpm)
+                else:
+                    start_time = float(cand["start_time"])
+                    end_time = float(cand["end_time"])
+                    bars_val = int(cand["bars"])
+                    bpm_val = float(cand["bpm"])
+
+                feats = extract_full_features(y, file_sr, start_time, end_time)
                 if not feats:
                     continue
                 row = {
                     "track_id": audio_path.stem,
-                    "start_time": cand.start_time,
-                    "end_time": cand.end_time,
-                    "bars": cand.bars,
-                    "bpm": cand.bpm,
+                    "start_time": start_time,
+                    "end_time": end_time,
+                    "bars": bars_val,
+                    "bpm": bpm_val,
                 }
                 row.update(feats)
                 row["target"] = heuristic_target(row)
@@ -153,6 +186,49 @@ def model_metrics(df: pd.DataFrame, pred_col: str, top_k: int, random_seed: int 
     }
 
 
+def _normalize_01(values: np.ndarray) -> np.ndarray:
+    x = np.asarray(values, dtype=float)
+    if x.size == 0:
+        return x
+    lo = float(np.min(x))
+    hi = float(np.max(x))
+    if not np.isfinite(lo) or not np.isfinite(hi) or hi <= lo + 1e-12:
+        return np.full_like(x, 0.5, dtype=float)
+    return (x - lo) / (hi - lo)
+
+
+def add_composite_predictions(
+    df: pd.DataFrame,
+    base_pred_col: str,
+    out_col: str,
+    weight_model_score: float,
+    weight_periodicity: float,
+    weight_drum_alignment: float,
+) -> pd.DataFrame:
+    for c in ("periodicity_score", "drum_alignment_score"):
+        if c not in df.columns:
+            df[c] = 0.0
+
+    model_vals = _normalize_01(df[base_pred_col].to_numpy(dtype=float))
+    periodicity_vals = np.clip(df["periodicity_score"].to_numpy(dtype=float), 0.0, 1.0)
+    drum_vals = np.clip(df["drum_alignment_score"].to_numpy(dtype=float), 0.0, 1.0)
+
+    w_model = max(0.0, float(weight_model_score))
+    w_periodicity = max(0.0, float(weight_periodicity))
+    w_drum = max(0.0, float(weight_drum_alignment))
+    w_sum = w_model + w_periodicity + w_drum
+    if w_sum <= 1e-12:
+        w_model, w_periodicity, w_drum = 1.0, 0.0, 0.0
+        w_sum = 1.0
+
+    w_model /= w_sum
+    w_periodicity /= w_sum
+    w_drum /= w_sum
+
+    df[out_col] = w_model * model_vals + w_periodicity * periodicity_vals + w_drum * drum_vals
+    return df
+
+
 def add_model_predictions(
     df: pd.DataFrame,
     model_path: Path,
@@ -187,6 +263,10 @@ def main():
     parser.add_argument("--top_k", type=int, default=5, help="Top-k segments per track for quality metrics")
     parser.add_argument("--rows_out", default="training/models/eval_rows.csv", help="CSV containing candidates, targets, and predictions")
     parser.add_argument("--metrics_out", default="training/models/eval_metrics.json", help="JSON output for aggregate metrics")
+    parser.add_argument("--disable_composite_eval", action="store_true", help="Skip composite reranking evaluation")
+    parser.add_argument("--weight_model_score", type=float, default=0.75, help="Composite weight for normalized model score")
+    parser.add_argument("--weight_periodicity", type=float, default=0.15, help="Composite weight for periodicity_score")
+    parser.add_argument("--weight_drum_alignment", type=float, default=0.10, help="Composite weight for drum_alignment_score")
     args = parser.parse_args()
 
     folder = Path(args.folder)
@@ -221,6 +301,27 @@ def main():
         }
     }
 
+    if not bool(args.disable_composite_eval):
+        df = add_composite_predictions(
+            df,
+            base_pred_col="pred_a",
+            out_col="pred_a_composite",
+            weight_model_score=float(args.weight_model_score),
+            weight_periodicity=float(args.weight_periodicity),
+            weight_drum_alignment=float(args.weight_drum_alignment),
+        )
+        metrics["model_a"]["metrics_composite"] = model_metrics(df, "pred_a_composite", top_k=args.top_k)
+        metrics["model_a"]["composite_vs_raw"] = {
+            "delta_topk_target": float(
+                metrics["model_a"]["metrics_composite"]["mean_track_topk_target"]
+                - metrics["model_a"]["metrics"]["mean_track_topk_target"]
+            ),
+            "delta_ndcg_at_k": float(
+                metrics["model_a"]["metrics_composite"]["mean_track_ndcg_at_k"]
+                - metrics["model_a"]["metrics"]["mean_track_ndcg_at_k"]
+            ),
+        }
+
     if args.model_b and args.features_b:
         model_b = Path(args.model_b)
         features_b = Path(args.features_b)
@@ -234,12 +335,50 @@ def main():
             "metrics": model_metrics(df, "pred_b", top_k=args.top_k),
         }
 
+        if not bool(args.disable_composite_eval):
+            df = add_composite_predictions(
+                df,
+                base_pred_col="pred_b",
+                out_col="pred_b_composite",
+                weight_model_score=float(args.weight_model_score),
+                weight_periodicity=float(args.weight_periodicity),
+                weight_drum_alignment=float(args.weight_drum_alignment),
+            )
+            metrics["model_b"]["metrics_composite"] = model_metrics(df, "pred_b_composite", top_k=args.top_k)
+            metrics["model_b"]["composite_vs_raw"] = {
+                "delta_topk_target": float(
+                    metrics["model_b"]["metrics_composite"]["mean_track_topk_target"]
+                    - metrics["model_b"]["metrics"]["mean_track_topk_target"]
+                ),
+                "delta_ndcg_at_k": float(
+                    metrics["model_b"]["metrics_composite"]["mean_track_ndcg_at_k"]
+                    - metrics["model_b"]["metrics"]["mean_track_ndcg_at_k"]
+                ),
+            }
+
         a_topk = metrics["model_a"]["metrics"]["mean_track_topk_target"]
         b_topk = metrics["model_b"]["metrics"]["mean_track_topk_target"]
         metrics["comparison"] = {
             "delta_topk_target_b_minus_a": float(b_topk - a_topk),
             "relative_topk_target_change_pct": float(((b_topk - a_topk) / (a_topk + 1e-8)) * 100.0),
         }
+
+        if not bool(args.disable_composite_eval):
+            a_topk_comp = metrics["model_a"]["metrics_composite"]["mean_track_topk_target"]
+            b_topk_comp = metrics["model_b"]["metrics_composite"]["mean_track_topk_target"]
+            metrics["comparison"]["delta_topk_target_b_minus_a_composite"] = float(b_topk_comp - a_topk_comp)
+            metrics["comparison"]["relative_topk_target_change_pct_composite"] = float(
+                ((b_topk_comp - a_topk_comp) / (a_topk_comp + 1e-8)) * 100.0
+            )
+
+    metrics["composite_eval"] = {
+        "enabled": not bool(args.disable_composite_eval),
+        "weights_requested": {
+            "model_score": float(args.weight_model_score),
+            "periodicity": float(args.weight_periodicity),
+            "drum_alignment": float(args.weight_drum_alignment),
+        },
+    }
 
     rows_out = Path(args.rows_out)
     rows_out.parent.mkdir(parents=True, exist_ok=True)

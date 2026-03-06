@@ -37,6 +37,20 @@ def _safe_float(value: float, default: float = 0.0) -> float:
     return default
 
 
+def _safe_cosine(a: np.ndarray, b: np.ndarray) -> float:
+    an = float(np.linalg.norm(a))
+    bn = float(np.linalg.norm(b))
+    if an < 1e-8 or bn < 1e-8:
+        return 0.0
+    return float(np.dot(a, b) / (an * bn))
+
+
+def _lag_similarity(vec: np.ndarray, lag: int) -> float:
+    if vec.size == 0 or lag <= 0 or lag >= vec.size:
+        return 0.0
+    return max(0.0, _safe_cosine(vec.astype(float), np.roll(vec.astype(float), lag)))
+
+
 def extract_full_features(y: np.ndarray, sr: int, start_time: float, end_time: float) -> Optional[Dict[str, float]]:
     """Extract lightweight rhythm/percussion features for a time slice."""
     if y is None or sr <= 0:
@@ -120,6 +134,16 @@ def extract_full_features(y: np.ndarray, sr: int, start_time: float, end_time: f
 
     boundary_drum_score = 0.45 * kick_on_one_score + 0.35 * snare_two_or_three_score + 0.20 * hihat_grid_score
 
+    # Drum-grid alignment score aligned with structure-analysis weighting.
+    drum_alignment_score = 0.70 * kick_on_one_score + 0.30 * snare_two_or_three_score
+
+    # Rhythm periodicity score from class-specific lag similarity.
+    lag_candidates = sorted({lag for lag in (near_half_beat, lag_quarter, lag_half) if lag > 0})
+    periodicity_kick = max((_lag_similarity(kick_norm, lag) for lag in lag_candidates), default=0.0)
+    periodicity_snare = max((_lag_similarity(snare_norm, lag) for lag in lag_candidates), default=0.0)
+    periodicity_hihat = max((_lag_similarity(hat_norm, lag) for lag in lag_candidates), default=0.0)
+    periodicity_score = 0.50 * periodicity_kick + 0.35 * periodicity_snare + 0.15 * periodicity_hihat
+
     return {
         "duration_sec": _safe_float(duration),
         "rms_mean": _safe_float(np.mean(rms)),
@@ -136,4 +160,9 @@ def extract_full_features(y: np.ndarray, sr: int, start_time: float, end_time: f
         "snare_two_or_three_score": _safe_float(snare_two_or_three_score),
         "hihat_grid_score": _safe_float(hihat_grid_score),
         "boundary_drum_score": _safe_float(boundary_drum_score),
+        "drum_alignment_score": _safe_float(drum_alignment_score),
+        "periodicity_score": _safe_float(periodicity_score),
+        "periodicity_kick": _safe_float(periodicity_kick),
+        "periodicity_snare": _safe_float(periodicity_snare),
+        "periodicity_hihat": _safe_float(periodicity_hihat),
     }
